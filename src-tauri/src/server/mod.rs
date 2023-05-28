@@ -1,13 +1,12 @@
 mod db;
 
-use rocket::{request::Request, figment::{Figment, providers::{Toml, Format}}, Config, http::ContentType, response::content::RawHtml, Build};
-// use rocket_include_static_resources::{EtagIfNoneMatch, StaticContextManager, StaticResponse};
-use db::middleware::{DbInstance, DbMiddleware};
+use rocket::{request::Request, figment::{Figment, providers::{Toml, Format}}, Config, http::{ContentType, Status}, response::content::RawHtml, Build, Response};
+use db::middleware::{ DbMiddleware};
 use rocket_include_static_resources::mime;
-use rocket_multipart_form_data::{MultipartFormDataField, MultipartFormDataOptions, MultipartFormData, MultipartFormDataError, multer};
-use std::io::{self, Read};
+use rocket_multipart_form_data::{MultipartFormDataField, MultipartFormDataOptions, MultipartFormData, MultipartFormDataError, multer, Repetition};
 use rocket::Data;
 use rocket_raw_response::RawResponse;
+use tracing::info;
 
 static_response_handler! {
     "/favicon.ico" => favicon => "favicon",
@@ -16,8 +15,35 @@ static_response_handler! {
 
 
 
-#[post("/upload/<device_id>", data = "<data>")]
-async fn upload(device_id: String, content_type: &ContentType, data: Data<'_>) -> Result<RawResponse, &'static str> {
+/*
+
+API for Aperture server starts here.
+ */
+#[get("/connect", data = "<data>")]
+async fn connect(content_type: &ContentType, data: Data<'_>) -> Result<String, Status>{
+    let mut options = MultipartFormDataOptions::with_multipart_form_data_fields(
+        vec! [
+            MultipartFormDataField::text("DeviceID").size_limit(4096),
+            MultipartFormDataField::text("OS"),
+            MultipartFormDataField::text("DeviceName"),
+            MultipartFormDataField::text("email"),
+            MultipartFormDataField::text("global")
+        ]
+    );
+    let mut multipart_form_data = MultipartFormData::parse(content_type, data, options).await;
+
+
+    match multipart_form_data{
+        Ok(form) => info!("Form is good"),
+        Err(e) => return Err(Status::BadRequest),
+    };
+
+    Ok("Got it".to_string())
+}
+
+
+#[post("/push_file/<device_id>", data = "<data>")]
+async fn push_file(device_id: String, content_type: &ContentType, data: Data<'_>) -> Result<RawResponse, &'static str> {
     let options = MultipartFormDataOptions {
         max_data_bytes: 33 * 1024 * 1024,
         allowed_fields: vec![MultipartFormDataField::raw("image")
@@ -68,6 +94,34 @@ async fn upload(device_id: String, content_type: &ContentType, data: Data<'_>) -
     }
 }
 
+async fn push_folder() {
+    
+}
+
+
+async fn sync_database(){
+
+}
+
+async fn modify_file(){
+
+}
+
+
+async fn pull_file(){
+
+}
+
+async fn pull_folder(){
+
+}
+
+async fn server_sync(){
+
+}
+
+
+
 #[catch(404)]
 fn not_found(req: &Request) -> String {
     format!("Oh no! We couldn't find the requested path '{}'", req.uri())
@@ -91,7 +145,7 @@ pub fn rocket() -> rocket::Rocket<Build> {
     ))
     .register("/",catchers![not_found])
     .mount("/", routes![favicon, favicon_png])
-    .mount("/", routes![index])
-    .mount("/", routes![upload]);
+    .mount("/", routes![index,connect])
+    .mount("/", routes![push_file]);
     return build;
 }

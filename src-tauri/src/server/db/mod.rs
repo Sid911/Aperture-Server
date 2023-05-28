@@ -81,7 +81,6 @@ impl Fairing for DbFairing {
     let db_config: DbConfig = figment.select("database").extract().unwrap();
 
     let db = Db::new(&db_config.namespace, &db_config.database, &db_config.datastore).await;
-    let _res = db.query("CREATE company:surrealdb SET name = 'SurrealDB';").await.expect("error creating a value");
 
 
     Ok(rocket.manage(db))

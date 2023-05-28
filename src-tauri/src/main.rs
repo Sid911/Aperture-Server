@@ -43,7 +43,31 @@ impl From<WindowHandler> for Vec<Route> {
 }
 
 
+struct TestWriter;
+
+impl std::io::Write for TestWriter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        let buf_len = buf.len();
+    
+        println!("{:?}", buf);
+        Ok(buf_len)
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
 fn main() {
+
+    #[cfg(release)]{
+
+        let file_appender = tracing_appender::rolling::hourly("logs/", "prefix.log");
+        tracing_subscriber::fmt().with_writer(file_appender).init();
+    }
+    #[cfg(not(release))]
+    tracing_subscriber::fmt().init();
+
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![greet])
         .setup(|app| {

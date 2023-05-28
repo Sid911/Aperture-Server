@@ -67,7 +67,11 @@ impl Fairing for DbMiddleware {
 
         // db.query("CREATE user;").await.unwrap();
         // db.query(format!("CREATE permissions SET name = 'Viewer', users = []; CREATE permissions SET name = 'Admin', users = [];").as_str()).await.unwrap();
-
+        // let mut _res = db.query("CREATE company:surrealdb SET name = 'SurrealDB';").await.expect("error creating a value");
+    
+        // _res = db.query("Select * from company").await.expect("Error");
+    
+        // println!("{:?}", _res);
         Ok(rocket.manage(db))
     }
 }
