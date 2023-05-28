@@ -3,7 +3,7 @@ use rocket::{
     serde::Deserialize,
     Build, Rocket,
 };
-use surrealdb::{sql::Value, Error, dbs::Session, kvs::Datastore};
+use surrealdb::{dbs::Session, kvs::Datastore, sql::Value, Error};
 
 pub struct DbInstance {
     session: Session,
@@ -14,7 +14,7 @@ impl DbInstance {
     pub async fn new_instance(namespace: String, database: String, datastore: String) -> Self {
         Self {
             session: Session::for_db(namespace.to_string(), database.to_string()),
-            datastore: Datastore::new(&datastore).await.unwrap()
+            datastore: Datastore::new(&datastore).await.unwrap(),
         }
     }
 
@@ -68,9 +68,9 @@ impl Fairing for DbMiddleware {
         // db.query("CREATE user;").await.unwrap();
         // db.query(format!("CREATE permissions SET name = 'Viewer', users = []; CREATE permissions SET name = 'Admin', users = [];").as_str()).await.unwrap();
         // let mut _res = db.query("CREATE company:surrealdb SET name = 'SurrealDB';").await.expect("error creating a value");
-    
+
         // _res = db.query("Select * from company").await.expect("Error");
-    
+
         // println!("{:?}", _res);
         Ok(rocket.manage(db))
     }

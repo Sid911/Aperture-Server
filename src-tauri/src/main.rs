@@ -1,12 +1,13 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-#[macro_use] extern crate rocket;
+#[macro_use]
+extern crate rocket;
 
-#[macro_use] extern crate rocket_include_static_resources;
+#[macro_use]
+extern crate rocket_include_static_resources;
 mod server;
 
-
-use rocket::{async_trait, route::Handler, Request, Route, http::Method};
+use rocket::{async_trait, http::Method, route::Handler, Request, Route};
 use tauri::Manager;
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -14,7 +15,6 @@ use tauri::Manager;
 fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
-
 
 #[derive(Clone)]
 struct WindowHandler {
@@ -29,7 +29,11 @@ impl WindowHandler {
 
 #[async_trait]
 impl Handler for WindowHandler {
-    async fn handle<'r>(&self, request: &'r Request<'_>, data: rocket::Data<'r>) -> rocket::route::Outcome<'r>  {
+    async fn handle<'r>(
+        &self,
+        request: &'r Request<'_>,
+        data: rocket::Data<'r>,
+    ) -> rocket::route::Outcome<'r> {
         self.window
             .emit("from-rust", format!("message"))
             .expect("failed to emit");
@@ -42,13 +46,12 @@ impl From<WindowHandler> for Vec<Route> {
     }
 }
 
-
 struct TestWriter;
 
 impl std::io::Write for TestWriter {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         let buf_len = buf.len();
-    
+
         println!("{:?}", buf);
         Ok(buf_len)
     }
@@ -59,9 +62,8 @@ impl std::io::Write for TestWriter {
 }
 
 fn main() {
-
-    #[cfg(release)]{
-
+    #[cfg(release)]
+    {
         let file_appender = tracing_appender::rolling::hourly("logs/", "prefix.log");
         tracing_subscriber::fmt().with_writer(file_appender).init();
     }
@@ -74,6 +76,7 @@ fn main() {
             let window = app.get_window("main").unwrap();
 
             let index = WindowHandler::new(window);
+
             // mount the rocket instance
             tauri::async_runtime::spawn(async move {
                 let _rocket = server::rocket();
