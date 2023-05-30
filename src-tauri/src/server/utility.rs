@@ -21,4 +21,3 @@ impl TextFieldExt for Option<&Vec<TextField>> {
         self.unwrap().first().map(|t| t.text.clone())
     }
 }
-

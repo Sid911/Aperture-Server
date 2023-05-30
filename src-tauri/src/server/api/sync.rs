@@ -10,7 +10,7 @@ use surrealdb::Response;
 use tracing::info;
 
 use crate::server::db::db_instance::DbInstance;
-use crate::server::db::{Device, Record};
+use crate::server::db::{Device, DeviceHash, Record};
 use crate::server::utility;
 use crate::server::utility::TextFieldExt;
 
@@ -23,12 +23,11 @@ pub async fn connect(
 ) -> Result<String, Status> {
     info!("Remote Address: {}", remote_address);
     // Process multipart form data
-    let mut options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
-        MultipartFormDataField::text("DeviceID").size_limit(4096),
+    let options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
+        MultipartFormDataField::text("DeviceID"),
         MultipartFormDataField::text("OS"),
         MultipartFormDataField::text("DeviceName"),
         MultipartFormDataField::text("Global"),
-        MultipartFormDataField::text("IP"),
         MultipartFormDataField::text("Location"),
         MultipartFormDataField::text("PIN"),
         MultipartFormDataField::text("ReadOnly"),
@@ -37,7 +36,7 @@ pub async fn connect(
     let form_result = MultipartFormData::parse(content_type, data, options).await;
 
     // Return BadRequest(206) if there is an error parsing the request
-    let mut multipart_form = match form_result {
+    let multipart_form = match form_result {
         Ok(form) => form,
         Err(e) => return Err(Status::BadRequest),
     };
@@ -50,7 +49,6 @@ pub async fn connect(
         Some(_t) => true,
         None => false,
     };
-    let ip = multipart_form.texts.get("IP");
     let location = multipart_form.texts.get("Location");
     let pin = multipart_form.texts.get("PIN");
     let read_only = match multipart_form.texts.get("ReadOnly") {
@@ -58,7 +56,7 @@ pub async fn connect(
         None => false,
     };
 
-    let required_available = utility::verify_required_data(&[device_id, os, device_name, ip, pin]);
+    let required_available = utility::verify_required_data(&[device_id, os, device_name, pin]);
     info!("All required Parameters available : {}", required_available);
 
     let device_id = device_id.first_text().unwrap();
@@ -66,35 +64,47 @@ pub async fn connect(
     let device_name = device_name.first_text().unwrap();
     let location = location.first_text().unwrap();
     let pin = pin.first_text().unwrap();
-
     let database = &db.database;
+
+    // Check for existing setup
     let device: Option<Device> = database.select(("device", &device_id)).await.unwrap();
 
     let device = match device {
+        // Return Conflict if there is already a device with the same id
         Some(d) => return Err(Status::Conflict),
-        None => Device::new(
-            device_id.clone(),
-            device_name,
-            is_global,
-            read_only,
-            from_str(&os).unwrap(),
-        ),
+        None => Device::new(device_name, is_global, read_only, from_str(&os).unwrap()),
     };
 
     let seralized = to_string(&device).unwrap();
     info!("Creating Device : {}", seralized);
-    let r : Option<Record>= database
-        .create(("device", device_id))
-        .content(device)
+    let r: Option<Record> = database
+        .create(("device", &device_id))
+        .content(&device)
         .await
         .unwrap();
-    // info!("Device Created {:?}", r);
+    info!("Device Created : {:?}", r);
 
-    Ok("Ok".to_string())
+    // Create hash and store it using the pin
+    let r: Option<Record> = database
+        .create(("hash", device_id))
+        .content(DeviceHash::new(
+            device.uuid.clone(),
+            device.name,
+            pin
+        ))
+        .await
+        .unwrap();
+    Ok(device.uuid.to_string())
 }
 
-#[get("/database")]
-async fn sync_database() {}
+#[get("/database", data = "<data>")]
+async fn sync_database(
+    content_type: &ContentType,
+    data: Data<'_>,
+    remote_address: SocketAddr,
+    db: &State<DbInstance>,
+) {
+}
 
 #[get("/server")]
 async fn server_sync() {}

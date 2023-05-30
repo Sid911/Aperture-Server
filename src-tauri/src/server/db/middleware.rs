@@ -4,9 +4,7 @@ use rocket::{
     Build, Rocket,
 };
 
-
 use super::db_instance::DbInstance;
-
 
 pub struct DbMiddleware;
 
@@ -37,9 +35,10 @@ impl Fairing for DbMiddleware {
             db_config.database.clone(),
             db_config.datastore.clone(),
         )
-        .await{
+        .await
+        {
             Ok(db) => db,
-            Err(e) => panic!("{}",e)
+            Err(e) => panic!("{}", e),
         };
 
         Ok(rocket.manage(db))

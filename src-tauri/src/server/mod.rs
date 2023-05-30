@@ -13,7 +13,6 @@ use rocket::{
     Build, Config,
 };
 
-
 static_response_handler! {
     "/favicon.ico" => favicon => "favicon",
     "/favicon-16.png" => favicon_png => "favicon-png",
@@ -23,7 +22,6 @@ static_response_handler! {
 
 API for Aperture server starts here.
  */
-
 
 #[catch(404)]
 fn not_found(req: &Request) -> String {

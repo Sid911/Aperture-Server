@@ -1,4 +1,4 @@
-pub mod sync;
-pub mod push;
-pub mod pull;
 pub mod modify;
+pub mod pull;
+pub mod push;
+pub mod sync;

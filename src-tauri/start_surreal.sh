@@ -1,1 +1,1 @@
-surreal start --log debug --user root --pass root memory --bind 0.0.0.0:8888
+surreal start --log debug --user root --pass root file://temp.db --bind 0.0.0.0:8888

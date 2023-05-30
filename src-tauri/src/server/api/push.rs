@@ -1,11 +1,11 @@
 use rocket::http::ContentType;
 use rocket::Data;
 use rocket_include_static_resources::mime;
-use rocket_multipart_form_data::{MultipartFormDataOptions, MultipartFormDataField, MultipartFormDataError, MultipartFormData, multer};
+use rocket_multipart_form_data::{
+    multer, MultipartFormData, MultipartFormDataError, MultipartFormDataField,
+    MultipartFormDataOptions,
+};
 use rocket_raw_response::RawResponse;
-
-
-
 
 #[post("/file/<device_id>", data = "<data>")]
 pub async fn push_file(
@@ -62,6 +62,5 @@ pub async fn push_file(
         None => Err("Please input a file."),
     }
 }
-
 
 async fn push_folder() {}
