@@ -5,6 +5,7 @@ import { FileEntry } from '@tauri-apps/api/fs'
 import { open } from "@tauri-apps/api/dialog"
 import { VsAdd, VsKebabVertical } from 'solid-icons/vs'
 import { RiDocumentFoldersFill } from 'solid-icons/ri'
+import FolderDropdown from "./FolderDropdown";
 
 async function handleFolderSelection() {
   let selected = await open({ directory: true })
@@ -55,7 +56,7 @@ const Folder: Component<{ entry: FileEntry }> = (props) => {
   return <div class="dark:bg-neutral-900 rounded-lg p-3 flex flex-row justify-between content-center 
   shadow-md hover:shadow-lg hover:shadow-black shadow-black my-1 hover:z-10">
     <p><span>{props.entry.name}</span> <span class="text-xs dark:text-neutral-500">{props.entry.path}</span></p>
-    <button class="hover:bg-black"><VsKebabVertical /></button>
+    <FolderDropdown/>
   </div>;
 };
 

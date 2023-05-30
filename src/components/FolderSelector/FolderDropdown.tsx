@@ -1,18 +1,19 @@
 import { VsKebabVertical } from "solid-icons/vs";
-import { Component } from "solid-js";
+import { Component, onMount } from "solid-js";
 
-const TaskDropdown: Component<{}> = (props) => {
 
-    return <div class="" data-te-dropdown-ref>
+const FolderDropdown: Component<{}> = (props) => {
+
+    return (<div class="relative" data-te-dropdown-ref>
         <button
-            class="flex items-center whitespace-nowrap rounded bg-black px-2 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white transition duration-150 ease-in-out hover:bg-black-600"
+            class="flex items-center whitespace-nowrap rounded bg-black px-2 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white"
             type="button"
             id="dropdownMenuButton1"
             data-te-dropdown-toggle-ref
             aria-expanded="false"
             data-te-ripple-init
             data-te-ripple-color="light">
-                <VsKebabVertical />
+            <VsKebabVertical />
         </button>
         <ul
             class="absolute z-[1000] float-left m-0 hidden min-w-max list-none overflow-hidden rounded-lg border-none bg-white bg-clip-padding text-left text-base shadow-lg dark:bg-neutral-700 [&[data-te-dropdown-show]]:block"
@@ -40,7 +41,7 @@ const TaskDropdown: Component<{}> = (props) => {
                 >Something else here</a>
             </li>
         </ul>
-    </div>;
+    </div>);
 };
 
-export {TaskDropdown};
+export default FolderDropdown;

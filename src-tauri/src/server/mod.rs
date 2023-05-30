@@ -1,5 +1,5 @@
 mod api;
-mod db;
+pub mod db;
 mod utility;
 
 use db::middleware::DbMiddleware;
