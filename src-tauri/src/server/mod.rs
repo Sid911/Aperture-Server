@@ -47,7 +47,7 @@ pub fn rocket() -> rocket::Rocket<Build> {
         .register("/", catchers![not_found])
         .mount("/", routes![favicon, favicon_png])
         .mount("/", routes![index])
-        .mount("/sync", routes![api::sync::connect])
+        .mount("/sync", routes![api::sync::connect, api::sync::server_sync])
         .mount("/push", routes![api::push::push_file]);
     return build;
 }

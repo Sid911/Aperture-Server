@@ -1,9 +1,11 @@
 [release]
-port = 3000
+port = 8000
+address = "0.0.0.0"
 
 [default]
 address = "0.0.0.0"
 port = 8000
+workers = 6
 
 [nyc]
-port = 3000
+port = 8000

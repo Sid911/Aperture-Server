@@ -6,13 +6,16 @@ use rocket_multipart_form_data::{
     MultipartFormData, MultipartFormDataField, MultipartFormDataOptions,
 };
 use serde_json::{from_str, to_string};
-use surrealdb::Response;
+
+use surrealdb::sql::{Id, Thing};
 use tracing::info;
 
 use crate::server::db::db_instance::DbInstance;
-use crate::server::db::{Device, DeviceHash, Record};
-use crate::server::utility;
+use crate::server::db::device_table::Device;
+use crate::server::db::hash_table::DeviceHash;
+use crate::server::db::Record;
 use crate::server::utility::TextFieldExt;
+use crate::server::utility::{self, gen_sha_256_hash};
 
 #[get("/connect", data = "<data>")]
 pub async fn connect(
@@ -86,11 +89,15 @@ pub async fn connect(
 
     // Create hash and store it using the pin
     let r: Option<Record> = database
-        .create(("hash", device_id))
+        .create(("hash", &device_id))
         .content(DeviceHash::new(
             device.uuid.clone(),
             device.name,
-            pin
+            pin,
+            Thing {
+                tb: "device".to_string(),
+                id: Id::from(&device_id),
+            },
         ))
         .await
         .unwrap();
@@ -103,8 +110,70 @@ async fn sync_database(
     data: Data<'_>,
     remote_address: SocketAddr,
     db: &State<DbInstance>,
-) {
+) -> Result<String, Status> {
+    info!("Remote Address: {}", remote_address);
+    // Process multipart form data
+    let options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
+        MultipartFormDataField::text("DeviceID"),
+        MultipartFormDataField::text("DeviceName"),
+        MultipartFormDataField::text("Global"),
+        MultipartFormDataField::text("PIN"),
+    ]);
+
+    let form_result = MultipartFormData::parse(content_type, data, options).await;
+
+    // Return BadRequest(206) if there is an error parsing the request
+    let multipart_form = match form_result {
+        Ok(form) => form,
+        Err(e) => return Err(Status::BadRequest),
+    };
+
+    let device_id = multipart_form.texts.get("DeviceID");
+    let device_name = multipart_form.texts.get("DeviceName");
+    let is_global = match multipart_form.texts.get("Global") {
+        Some(_t) => true,
+        None => false,
+    };
+    let pin = multipart_form.texts.get("PIN");
+
+    let device_id = device_id.first_text().unwrap();
+    let device_name = device_name.first_text().unwrap();
+    let pin = pin.first_text().unwrap();
+    let database = &db.database;
+
+    // Verify pin hash
+    let database = &db.database;
+    let hash: Result<Option<DeviceHash>, surrealdb::Error> =
+        database.select(("hash", device_id)).await;
+    let hash = match hash {
+        Ok(d) => d,
+        Err(e) => {
+            error!("{e}");
+            return Err(Status::InternalServerError);
+        }
+    };
+
+    let hash = match hash {
+        Some(d) => d,
+        None => return Err(Status::BadRequest),
+    };
+    if hash.hash != gen_sha_256_hash(&pin) {
+        return Err(Status::Unauthorized);
+    }
+
+    Ok(String::from("rando"))
 }
 
 #[get("/server")]
-async fn server_sync() {}
+pub async fn server_sync(db: &State<DbInstance>) {
+    let database = &db.database;
+    let device: Option<DeviceHash> = database
+        .select(("hash", "Vivobook2210-34623"))
+        .await
+        .unwrap();
+    let device = match device {
+        Some(d) => d,
+        None => return (),
+    };
+    info!("{:?}", to_string(&device))
+}
