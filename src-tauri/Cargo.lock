@@ -84,6 +84,7 @@ dependencies = [
  "anyhow",
  "blurhash",
  "chrono",
+ "mime",
  "rocket",
  "rocket-include-static-resources",
  "rocket-multipart-form-data",

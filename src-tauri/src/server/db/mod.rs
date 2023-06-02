@@ -1,6 +1,7 @@
 pub mod db_instance;
 pub mod device_table;
 pub mod hash_table;
+pub mod local_table;
 pub mod middleware;
 
 use surrealdb::sql::Thing;
@@ -24,4 +25,9 @@ pub struct Record {
 pub struct Server {
     global_pin: String,
     local_pin: String,
+}
+
+pub enum Store {
+    Device,
+    Global,
 }
