@@ -5,7 +5,7 @@ use rocket::{Data, State};
 use rocket_multipart_form_data::{
     MultipartFormData, MultipartFormDataField, MultipartFormDataOptions,
 };
-use serde_json::{from_str, to_string};
+use serde_json::{from_str, json, to_string, Value};
 
 use surrealdb::sql::{Id, Thing};
 use tracing::info;
@@ -60,6 +60,9 @@ pub async fn connect(
     };
 
     let required_available = utility::verify_required_data(&[device_id, os, device_name, pin]);
+    if !required_available {
+        return Err(Status::BadRequest);
+    }
     info!("All required Parameters available : {}", required_available);
 
     let device_id = device_id.first_text().unwrap();
@@ -75,7 +78,13 @@ pub async fn connect(
     let device = match device {
         // Return Conflict if there is already a device with the same id
         Some(d) => return Err(Status::Conflict),
-        None => Device::new(device_name, is_global, read_only, from_str(&os).unwrap()),
+        None => Device::new(
+            device_name,
+            is_global,
+            read_only,
+            from_str(&os).unwrap(),
+            remote_address.to_string(),
+        ),
     };
 
     let seralized = to_string(&device).unwrap();
@@ -157,23 +166,67 @@ async fn sync_database(
         Some(d) => d,
         None => return Err(Status::BadRequest),
     };
-    if hash.hash != gen_sha_256_hash(&pin) {
+    if hash.hash != pin {
         return Err(Status::Unauthorized);
     }
 
     Ok(String::from("rando"))
 }
 
-#[get("/server")]
-pub async fn server_sync(db: &State<DbInstance>) {
+#[get("/server", data = "<data>")]
+pub async fn server_sync(
+    db: &State<DbInstance>,
+    data: Data<'_>,
+    content_type: &ContentType,
+) -> Result<Value, Status> {
     let database = &db.database;
-    let device: Option<DeviceHash> = database
-        .select(("hash", "Vivobook2210-34623"))
-        .await
-        .unwrap();
-    let device = match device {
-        Some(d) => d,
-        None => return (),
+
+    let options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
+        MultipartFormDataField::text("DeviceID"),
+        MultipartFormDataField::text("DeviceName"),
+    ]);
+
+    let form_result = MultipartFormData::parse(content_type, data, options).await;
+
+    // Return BadRequest(206) if there is an error parsing the request
+    let multipart_form = match form_result {
+        Ok(form) => form,
+        Err(e) => return Err(Status::BadRequest),
     };
-    info!("{:?}", to_string(&device))
+
+    let device_id = multipart_form.texts.get("DeviceID").first_text().unwrap();
+    // let device_name = multipart_form.texts.get("DeviceName").first_text().unwrap();
+
+    // Check if already present
+
+    let result: Result<Option<Device>, surrealdb::Error> =
+        database.select(("device", &device_id)).await;
+
+    let result = match result {
+        Err(e) => return Err(Status::InternalServerError),
+        Ok(d) => d,
+    };
+
+    let result = match result {
+        None => return Err(Status::Conflict),
+        Some(d) => d,
+    };
+
+    return Ok(json!({
+        "DeviceID": device_id,
+        "DeviceName": result.name,
+        "LastSync": result.last_sync,
+        "Global": result.global
+    }));
+
+    // let device: Option<DeviceHash> = database
+    //     .select(("hash", "Vivobook2210-34623"))
+    //     .await
+    //     .unwrap();
+
+    // let device = match device {
+    //     Some(d) => d,
+    //     None => return (),
+    // };
+    // info!("{:?}", to_string(&device))
 }

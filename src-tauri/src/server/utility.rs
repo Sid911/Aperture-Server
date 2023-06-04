@@ -1,3 +1,5 @@
+use std::{fs, path::Path};
+
 use rocket_multipart_form_data::TextField;
 use sha2::{Digest, Sha256};
 
@@ -30,4 +32,17 @@ pub fn gen_sha_256_hash(string: &String) -> String {
 
     let result = hasher.finalize();
     format!("{:x}", result)
+}
+
+// move a file
+fn move_file(source_path: &str, destination_path: &str) -> Result<(), std::io::Error> {
+    // Create the destination directory if it doesn't exist
+    let destination_dir = Path::new(destination_path).parent().unwrap();
+    if !destination_dir.exists() {
+        fs::create_dir_all(destination_dir)?;
+    }
+
+    // Move the file
+    fs::rename(source_path, destination_path)?;
+    Ok(())
 }

@@ -1,6 +1,5 @@
 use std::fs::{self, Metadata};
 
-use chrono::Utc;
 use mime::Mime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -12,6 +11,7 @@ pub struct LocalEntry {
     pub file_name: String,
     pub file_size: u64,
     pub file_type: String,
+    pub blurhash: Option<String>,
     pub file_location: String,
     pub metadata: SerializedMetadata,
 }
@@ -24,6 +24,7 @@ impl LocalEntry {
         file_type: String,
         file_location: String,
         mime: Option<Mime>,
+        blurhash: Option<String>,
     ) -> Self {
         let metadata = fs::metadata(file_location.clone()).unwrap();
         let serialized_meta = SerializedMetadata::from(metadata, mime);
@@ -34,6 +35,7 @@ impl LocalEntry {
             file_type,
             file_location,
             metadata: serialized_meta,
+            blurhash,
         }
     }
 

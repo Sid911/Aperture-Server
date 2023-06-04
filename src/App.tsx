@@ -23,7 +23,7 @@ function App() {
           </p>
           <span><FiServer class="m-2" size={20} /></span>
         </div>
-        <button class="dark:bg-black rounded-lg p-2 dark:text-neutral-100 shadow-md shadow-black"> Online</button>
+        <button class="dark:bg-black rounded-lg p-2 dark:text-neutral-100 shadow-md shadow-black"> Online : 192.168.1.9</button>
       </div>
       <div class="grid grid-cols-3 gap-5">
         <FolderSelector />
@@ -56,7 +56,7 @@ function App() {
             last_update_time: "738463465243",
             local_IP: "141.72.190.43",
             os: "Android 11",
-            syncing: true
+            syncing: false
 
           },
           {

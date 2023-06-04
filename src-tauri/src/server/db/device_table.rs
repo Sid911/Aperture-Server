@@ -14,10 +14,17 @@ pub struct Device {
     pub global: bool,
     pub read_only: bool,
     pub os: OS,
+    pub last_remote_addr: String,
 }
 
 impl Device {
-    pub fn new(name: String, global: bool, read_only: bool, os: OS) -> Device {
+    pub fn new(
+        name: String,
+        global: bool,
+        read_only: bool,
+        os: OS,
+        last_remote_addr: String,
+    ) -> Device {
         Device {
             uuid: Uuid::new_v4(),
             name,
@@ -26,6 +33,7 @@ impl Device {
             os,
             created_date: Utc::now(),
             last_sync: Utc::now(),
+            last_remote_addr,
         }
     }
 }

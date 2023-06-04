@@ -4,6 +4,7 @@ pub mod hash_table;
 pub mod local_table;
 pub mod middleware;
 
+use rocket::time::OffsetDateTime;
 use surrealdb::sql::Thing;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -28,6 +29,6 @@ pub struct Server {
 }
 
 pub enum Store {
-    Device,
-    Global,
+    Device(local_table::LocalEntry),
+    Global(),
 }
