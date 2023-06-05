@@ -2,26 +2,23 @@ use std::fs::{self, Metadata};
 
 use mime::Mime;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 #[derive(Debug, Serialize, Deserialize)]
 // #[serde("flatten")]
 pub struct LocalEntry {
-    pub file_uuid: Uuid,
+    pub file_uuid: String,
     pub file_name: String,
     pub file_size: u64,
-    pub file_type: String,
     pub blurhash: Option<String>,
     pub file_location: String,
     pub metadata: SerializedMetadata,
 }
 
 impl LocalEntry {
-    fn new(
-        device_uuid: Uuid,
+    pub fn new(
+        device_uuid: String,
         file_name: String,
         file_size: u64,
-        file_type: String,
         file_location: String,
         mime: Option<Mime>,
         blurhash: Option<String>,
@@ -32,7 +29,6 @@ impl LocalEntry {
             file_uuid: device_uuid,
             file_name,
             file_size,
-            file_type,
             file_location,
             metadata: serialized_meta,
             blurhash,

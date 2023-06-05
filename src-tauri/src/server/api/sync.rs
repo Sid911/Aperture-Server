@@ -88,29 +88,37 @@ pub async fn connect(
     };
 
     let seralized = to_string(&device).unwrap();
-    info!("Creating Device : {}", seralized);
+    info!("Creating Device : {:#?}", seralized);
+
+    // let r: surrealdb::Response = database
+    // .query(format!("CREATE device:{device_id} CONTENT {seralized}"))
+    // .await.unwrap();
     let r: Option<Record> = database
         .create(("device", &device_id))
         .content(&device)
         .await
         .unwrap();
-    info!("Device Created : {:?}", r);
+    info!("Device Created : {:#?}", r);
 
     // Create hash and store it using the pin
+    let device_hash = DeviceHash::new(
+        device.uuid.clone(),
+        device.name,
+        pin,
+        Thing {
+            tb: "device".to_string(),
+            id: Id::from(&device_id),
+        },
+    );
+    // let r = database
+    // .query(format!("CREATE hash:{device_id} Content {}", to_string(&device_hash).unwrap()))
+    // .await.unwrap();
     let r: Option<Record> = database
         .create(("hash", &device_id))
-        .content(DeviceHash::new(
-            device.uuid.clone(),
-            device.name,
-            pin,
-            Thing {
-                tb: "device".to_string(),
-                id: Id::from(&device_id),
-            },
-        ))
+        .content(&device_hash)
         .await
         .unwrap();
-    Ok(device.uuid.to_string())
+    Ok(device.uuid)
 }
 
 #[get("/database", data = "<data>")]

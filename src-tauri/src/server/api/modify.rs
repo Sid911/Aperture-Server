@@ -7,12 +7,12 @@ use rocket::{
 use rocket_multipart_form_data::{
     MultipartFormData, MultipartFormDataField, MultipartFormDataOptions,
 };
-use serde_json::from_str;
+
 use surrealdb::opt::PatchOp;
 
 use crate::server::{
     db::{db_instance::DbInstance, device_table::Device, hash_table::DeviceHash, OS},
-    utility::{self, TextFieldExt},
+    utility::{self, gen_sha_256_hash, TextFieldExt},
 };
 
 #[patch("/file")]
@@ -92,27 +92,27 @@ pub async fn modfiy_device(
         Some(d) => d,
         None => return Err(Status::BadRequest),
     };
-    if device_hash.hash != pin {
+    if device_hash.hash != gen_sha_256_hash(&pin) {
         return Err(Status::Unauthorized);
     }
 
     // After verfied
     let os = os.first_text();
-    if let Some(os_type) = os {
-        let os: Result<OS, serde_json::Error> = from_str(&os_type);
-        let os = match os {
-            Ok(o) => o,
-            Err(e) => {
-                error!("Error Parsing OS : {}", e);
-                return Err(Status::BadRequest);
-            }
-        };
-        let _d: Device = database
-            .update(("device", &device_id))
-            .patch(PatchOp::replace("/os", os))
-            .await
-            .unwrap();
-    }
+    // if let Some(os_type) = os {
+    //     let os: Result<OS, serde_json::Error> = from_str(&os_type);
+    //     let os = match os {
+    //         Ok(o) => o,
+    //         Err(e) => {
+    //             error!("Error Parsing OS : {}", e);
+    //             return Err(Status::BadRequest);
+    //         }
+    //     };
+    //     let _d: Device = database
+    //         .update(("device", &device_id))
+    //         .patch(PatchOp::replace("/os", to_string(&os).unwrap()))
+    //         .await
+    //         .unwrap();
+    // }
 
     let device_name = device_name.first_text();
     if let Some(dev_name) = device_name {

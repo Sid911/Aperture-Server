@@ -41,7 +41,7 @@ function App() {
       <div class="my-4">
         <Devices devices={[
           {
-            device_name: "did",
+            device_name: "samsung m21",
             device_type: "mobile",
             last_sync_time: "66341723",
             last_update_time: "66556223",
@@ -50,22 +50,12 @@ function App() {
             syncing: true
           },
           {
-            device_name: "party",
+            device_name: "random",
             device_type: "mobile",
             last_sync_time: "403463972377",
             last_update_time: "738463465243",
             local_IP: "141.72.190.43",
             os: "Android 11",
-            syncing: false
-
-          },
-          {
-            device_name: "eight",
-            device_type: "mobile",
-            last_sync_time: "394746691527",
-            last_update_time: "707815598257",
-            local_IP: "182.42.130.81",
-            os: "Android 12",
             syncing: false
 
           },
