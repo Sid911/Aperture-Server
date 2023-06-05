@@ -73,7 +73,7 @@ pub async fn save_file_to_documents(
 }
 
 pub fn is_image_file(file_path: &std::path::Path) -> bool {
-    info!("is_image_file : {:?}",file_path);
+    info!("is_image_file : {:?}", file_path);
     let file_extension = file_path
         .extension()
         .unwrap()

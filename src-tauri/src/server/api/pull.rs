@@ -5,7 +5,10 @@ use rocket_multipart_form_data::{
 };
 
 use crate::server::{
-    db::{db_instance::DbInstance, device_table::Device, hash_table::DeviceHash, local_table::LocalEntry},
+    db::{
+        db_instance::DbInstance, device_table::Device, hash_table::DeviceHash,
+        local_table::LocalEntry,
+    },
     utility::{gen_sha_256_hash, TextFieldExt},
 };
 
@@ -116,7 +119,7 @@ pub async fn pull_file(
 
     let local = match local {
         Some(l) => l,
-        None => return Err("Could not find the file")
+        None => return Err("Could not find the file"),
     };
 
     let file_path = std::path::PathBuf::from(local.file_location);
@@ -124,11 +127,11 @@ pub async fn pull_file(
     if file_path.exists() {
         let file_obj = NamedFile::open(file_path).await;
         match file_obj {
-            Err(e) =>{
-                error!("{}",e);
+            Err(e) => {
+                error!("{}", e);
                 return Err("Error reading the file on expected path of the database");
-            },
-            Ok(f) => Ok(f)
+            }
+            Ok(f) => Ok(f),
         }
     } else {
         Err("file does not exist in the expected location")

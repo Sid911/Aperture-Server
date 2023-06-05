@@ -13,6 +13,7 @@ use tracing::info;
 use crate::server::db::db_instance::DbInstance;
 use crate::server::db::device_table::Device;
 use crate::server::db::hash_table::DeviceHash;
+use crate::server::db::local_table::LocalEntry;
 use crate::server::db::Record;
 use crate::server::utility::TextFieldExt;
 use crate::server::utility::{self, gen_sha_256_hash};
@@ -122,12 +123,12 @@ pub async fn connect(
 }
 
 #[get("/database", data = "<data>")]
-async fn sync_database(
+pub async fn sync_database(
     content_type: &ContentType,
     data: Data<'_>,
     remote_address: SocketAddr,
     db: &State<DbInstance>,
-) -> Result<String, Status> {
+) -> Result<Value, &'static str> {
     info!("Remote Address: {}", remote_address);
     // Process multipart form data
     let options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
@@ -142,7 +143,7 @@ async fn sync_database(
     // Return BadRequest(206) if there is an error parsing the request
     let multipart_form = match form_result {
         Ok(form) => form,
-        Err(e) => return Err(Status::BadRequest),
+        Err(e) => return Err("Error Parsing the request"),
     };
 
     let device_id = multipart_form.texts.get("DeviceID");
@@ -158,27 +159,74 @@ async fn sync_database(
     let pin = pin.first_text().unwrap();
     let database = &db.database;
 
-    // Verify pin hash
-    let database = &db.database;
+    // Check Device Entry
+    let result: Result<Option<Device>, surrealdb::Error> =
+        database.select(("device", &device_id)).await;
+
+    let result = match result {
+        Err(_e) => return Err("Error: finding device in database"),
+        Ok(d) => d,
+    };
+
+    match result {
+        None => return Err("Device is not present in database"),
+        Some(d) => d,
+    };
+
+    // Verify Pin
     let hash: Result<Option<DeviceHash>, surrealdb::Error> =
-        database.select(("hash", device_id)).await;
+        database.select(("hash", &device_id)).await;
     let hash = match hash {
         Ok(d) => d,
         Err(e) => {
             error!("{e}");
-            return Err(Status::InternalServerError);
+            return Err("Error: finding device hash in database\nCould not verify");
         }
     };
 
-    let hash = match hash {
+    let device_hash = match hash {
         Some(d) => d,
-        None => return Err(Status::BadRequest),
+        None => return Err("Couldn't find any auth entires for device ID"),
     };
-    if hash.hash != pin {
-        return Err(Status::Unauthorized);
+    if device_hash.hash != gen_sha_256_hash(&pin) {
+        return Err("Unauthorized");
     }
 
-    Ok(String::from("rando"))
+    // Start sync logic
+
+    let local_entries: Result<Vec<LocalEntry>, surrealdb::Error> =
+        database.select(&device_id).await;
+    let n = match local_entries {
+        Ok(entires) => {
+            let local_ids: Vec<Record> = database
+                .select(&device_id)
+                .await
+                .expect("Error retriving ids");
+            let e: Vec<LocalEntryWithId> = entires
+                .into_iter()
+                .enumerate()
+                .map(|(index, entry)| LocalEntryWithId {
+                    id: local_ids[index].id.id.to_string(),
+                    entry,
+                })
+                .collect();
+            e
+        }
+        Err(e) => {
+            error!("Error retriving entires:  {}", e);
+            return Err("Error: retriving entires");
+        }
+    };
+
+    Ok(json!({
+        "local_entries": n,
+    }))
+}
+
+#[derive(serde::Serialize)]
+struct LocalEntryWithId {
+    id: String,
+    entry: LocalEntry,
 }
 
 #[get("/server", data = "<data>")]
@@ -199,7 +247,7 @@ pub async fn server_sync(
     // Return BadRequest(206) if there is an error parsing the request
     let multipart_form = match form_result {
         Ok(form) => form,
-        Err(e) => return Err(Status::BadRequest),
+        Err(_e) => return Err(Status::BadRequest),
     };
 
     let device_id = multipart_form.texts.get("DeviceID").first_text().unwrap();
@@ -211,7 +259,7 @@ pub async fn server_sync(
         database.select(("device", &device_id)).await;
 
     let result = match result {
-        Err(e) => return Err(Status::InternalServerError),
+        Err(_e) => return Err(Status::InternalServerError),
         Ok(d) => d,
     };
 
@@ -226,15 +274,4 @@ pub async fn server_sync(
         "LastSync": result.last_sync,
         "Global": result.global
     }));
-
-    // let device: Option<DeviceHash> = database
-    //     .select(("hash", "Vivobook2210-34623"))
-    //     .await
-    //     .unwrap();
-
-    // let device = match device {
-    //     Some(d) => d,
-    //     None => return (),
-    // };
-    // info!("{:?}", to_string(&device))
 }
