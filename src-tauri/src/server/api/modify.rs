@@ -11,6 +11,7 @@ use rocket_multipart_form_data::{
 use surrealdb::opt::PatchOp;
 
 use crate::server::{
+    api::utility::{verify_device_id, verify_pin},
     db::{db_instance::DbInstance, device_table::Device, hash_table::DeviceHash, OS},
     utility::{self, gen_sha_256_hash, TextFieldExt},
 };
@@ -64,36 +65,30 @@ pub async fn modfiy_device(
     let database = &db.database;
 
     // Verify Device ID
-    let result: Result<Option<Device>, surrealdb::Error> =
-        database.select(("device", &device_id)).await;
-
-    let result = match result {
-        Err(e) => return Err(Status::InternalServerError),
-        Ok(d) => d,
-    };
-
-    let device = match result {
-        None => return Err(Status::Conflict),
-        Some(d) => d,
-    };
+    let result = verify_device_id::<Status>(
+        database,
+        &device_id,
+        Status::InternalServerError,
+        Status::Conflict,
+    )
+    .await;
+    if let Err(e) = result {
+        return Err(e);
+    }
 
     // Verify Pin
-    let hash: Result<Option<DeviceHash>, surrealdb::Error> =
-        database.select(("hash", &device_id)).await;
-    let hash = match hash {
-        Ok(d) => d,
-        Err(e) => {
-            error!("{e}");
-            return Err(Status::InternalServerError);
-        }
-    };
+    let result = verify_pin(
+        database,
+        &device_id,
+        &pin,
+        Status::InternalServerError,
+        Status::BadRequest,
+        Status::Unauthorized,
+    )
+    .await;
 
-    let device_hash = match hash {
-        Some(d) => d,
-        None => return Err(Status::BadRequest),
-    };
-    if device_hash.hash != gen_sha_256_hash(&pin) {
-        return Err(Status::Unauthorized);
+    if let Err(e) = result {
+        return Err(e);
     }
 
     // After verfied

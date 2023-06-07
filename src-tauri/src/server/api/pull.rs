@@ -12,6 +12,8 @@ use crate::server::{
     utility::{gen_sha_256_hash, TextFieldExt},
 };
 
+use super::utility::{verify_device_id, verify_pin};
+
 #[get("/file", data = "<data>")]
 pub async fn pull_file(
     content_type: &ContentType,
@@ -70,38 +72,34 @@ pub async fn pull_file(
     let file_name = file_name.first_text().unwrap();
     let relative_path = realtive_path.first_text().unwrap();
 
-    // Check Device Entry
     let database = &db.database;
-    let result: Result<Option<Device>, surrealdb::Error> =
-        database.select(("device", &device_id)).await;
 
-    let result = match result {
-        Err(e) => return Err("Error: finding device in database"),
-        Ok(d) => d,
-    };
+    // Check Device Entry
+    let result = verify_device_id::<&'static str>(
+        database,
+        &device_id,
+        "Error: finding device in database",
+        "Device is not present in database",
+    )
+    .await;
 
-    let device = match result {
-        None => return Err("Device is not present in database"),
-        Some(d) => d,
-    };
+    if let Err(e) = result {
+        return Err(e);
+    }
 
     // Verify Pin
-    let hash: Result<Option<DeviceHash>, surrealdb::Error> =
-        database.select(("hash", &device_id)).await;
-    let hash = match hash {
-        Ok(d) => d,
-        Err(e) => {
-            error!("{e}");
-            return Err("Error: finding device hash in database\nCould not verify");
-        }
-    };
+    let result = verify_pin(
+        database,
+        &device_id,
+        &pin,
+        "Error: finding device hash in database\nCould not verify",
+        "Couldn't find any auth entires for device ID",
+        "Unauthorized",
+    )
+    .await;
 
-    let device_hash = match hash {
-        Some(d) => d,
-        None => return Err("Couldn't find any auth entires for device ID"),
-    };
-    if device_hash.hash != gen_sha_256_hash(&pin) {
-        return Err("Unauthorized");
+    if let Err(e) = result {
+        return Err(e);
     }
 
     // Check for local Entry

@@ -1,10 +1,11 @@
-import { Component, For, createSignal } from "solid-js";
+import { Component, For, createSignal, onMount } from "solid-js";
 import { invoke } from "@tauri-apps/api/tauri";
 import { FileEntry } from '@tauri-apps/api/fs'
 
 import { open } from "@tauri-apps/api/dialog"
 import { VsAdd, VsKebabVertical } from 'solid-icons/vs'
 import { RiDocumentFoldersFill } from 'solid-icons/ri'
+import { readDir, BaseDirectory } from '@tauri-apps/api/fs';
 import FolderDropdown from "./FolderDropdown";
 
 async function handleFolderSelection() {
@@ -31,18 +32,20 @@ export const FolderSelector: Component<{}> = (props) => {
 
 
 const ExistingFolders: Component<{}> = (props) => {
-  let [dirs, setDirs] = createSignal<FileEntry[]>([
-    {
-      path: "/home/sid/Documents/Aperture",
-      name: "Aperture",
-      children: [{
-        path: "/home/sid/Documents/Aperture/file"
-      }]
-    }, {
-      path: "/home/sid/Pictures/", name: "Picture", children: [{
-        path: "/home/sid/Pictures/anime.png"
-      }]
-    }])
+  const [dirs, setDirs] = createSignal<FileEntry[]>([]);
+
+  onMount(async () => {
+    // initTE({ Dropdown, Ripple });
+
+    try {
+      const subfolders = await readDir('Aperture', { dir: BaseDirectory.Document, recursive: false });;
+      const folderEntries: FileEntry[] = subfolders;
+      console.log(folderEntries);
+      setDirs(folderEntries);
+    } catch (error) {   
+      console.error("Failed to fetch subfolders:", error);
+    }
+  });
 
   return <For each={dirs()}>{
     (dir, i) =>
@@ -67,4 +70,8 @@ const NewFolderButton: Component<{}> = (props) => {
     <VsAdd size={18}class="mx-2 my-1"/> <p> New Folder</p>
   </button>;
 };
+
+function initTE(arg0: { Dropdown: any; Ripple: any; }) {
+  throw new Error("Function not implemented.");
+}
 

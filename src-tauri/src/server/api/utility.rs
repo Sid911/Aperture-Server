@@ -1,7 +1,11 @@
 use rocket::log::private::info;
 use rocket_multipart_form_data::FileField;
+use surrealdb::{engine::remote::ws::Client, Surreal};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
+use crate::server::{db::{device_table::Device, hash_table::DeviceHash}, utility::gen_sha_256_hash};
+
+// File based Utility functions
 pub fn get_file_meta(path: &std::path::PathBuf) -> Option<std::fs::Metadata> {
     if let Ok(metadata) = std::fs::metadata(path) {
         if metadata.is_file() {
@@ -108,4 +112,55 @@ pub async fn get_documents_dir() -> Result<std::path::PathBuf, Box<dyn std::erro
         Some(documents_dir) => Ok(documents_dir),
         None => Err("Failed to get documents directory".into()),
     }
+}
+
+// Handle database checks
+
+pub async fn verify_device_id<T>(
+    database: &Surreal<Client>,
+    device_id: &String,
+    surreal_error: T,
+    not_found_error: T,
+) -> Result<Device, T> {
+    let result: Result<Option<Device>, surrealdb::Error> =
+        database.select(("device", device_id)).await;
+
+    let result = match result {
+        Err(e) => return Err(surreal_error),
+        Ok(d) => d,
+    };
+
+    let device = match result {
+        None => return Err(not_found_error),
+        Some(d) => d,
+    };
+    return Ok(device);
+}
+
+pub async fn verify_pin<T>(
+    database: &Surreal<Client>,
+    device_id: &String,
+    pin: &String,
+    surreal_error: T,
+    not_found_error: T,
+    incorrect_pin_error: T,
+) -> Result<DeviceHash, T>{
+    let hash: Result<Option<DeviceHash>, surrealdb::Error> =
+    database.select(("hash", device_id)).await;
+let hash = match hash {
+    Ok(d) => d,
+    Err(e) => {
+        error!("{e}");
+        return Err(surreal_error);
+    }
+};
+
+let device_hash = match hash {
+    Some(d) => d,
+    None => return Err(not_found_error),
+};
+if device_hash.hash != gen_sha_256_hash(pin) {
+    return Err(incorrect_pin_error);
+}
+return Ok(device_hash);
 }

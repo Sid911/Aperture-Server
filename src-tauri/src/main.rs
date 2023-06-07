@@ -61,6 +61,7 @@ impl std::io::Write for TestWriter {
     }
 }
 
+
 fn main() {
     #[cfg(release)]
     {

@@ -9,6 +9,9 @@ pub struct LocalEntry {
     pub file_uuid: String,
     pub file_name: String,
     pub file_size: u64,
+    pub dir_path: String,
+    pub client_path: String,
+    pub relative_path: String,
     pub blurhash: Option<String>,
     pub file_location: String,
     pub metadata: SerializedMetadata,
@@ -22,6 +25,9 @@ impl LocalEntry {
         file_location: String,
         mime: Option<Mime>,
         blurhash: Option<String>,
+        dir_path: String,
+        client_path: String,
+        relative_path: String,
     ) -> Self {
         let metadata = fs::metadata(file_location.clone()).unwrap();
         let serialized_meta = SerializedMetadata::from(metadata, mime);
@@ -32,6 +38,9 @@ impl LocalEntry {
             file_location,
             metadata: serialized_meta,
             blurhash,
+            dir_path,
+            client_path,
+            relative_path
         }
     }
 

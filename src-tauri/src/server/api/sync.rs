@@ -10,6 +10,7 @@ use serde_json::{from_str, json, to_string, Value};
 use surrealdb::sql::{Id, Thing};
 use tracing::info;
 
+use crate::server::api::utility::{verify_device_id, verify_pin};
 use crate::server::db::db_instance::DbInstance;
 use crate::server::db::device_table::Device;
 use crate::server::db::hash_table::DeviceHash;
@@ -160,36 +161,31 @@ pub async fn sync_database(
     let database = &db.database;
 
     // Check Device Entry
-    let result: Result<Option<Device>, surrealdb::Error> =
-        database.select(("device", &device_id)).await;
+    let result = verify_device_id(
+        database,
+        &device_id,
+        "Error: finding device in database",
+        "Device is not present in database",
+    )
+    .await;
 
-    let result = match result {
-        Err(_e) => return Err("Error: finding device in database"),
-        Ok(d) => d,
-    };
-
-    match result {
-        None => return Err("Device is not present in database"),
-        Some(d) => d,
-    };
+    if let Err(e) = result {
+        return Err(e);
+    }
 
     // Verify Pin
-    let hash: Result<Option<DeviceHash>, surrealdb::Error> =
-        database.select(("hash", &device_id)).await;
-    let hash = match hash {
-        Ok(d) => d,
-        Err(e) => {
-            error!("{e}");
-            return Err("Error: finding device hash in database\nCould not verify");
-        }
-    };
+    let result = verify_pin(
+        database,
+        &device_id,
+        &pin,
+        "Error: finding device hash in database\nCould not verify",
+        "Couldn't find any auth entires for device ID",
+        "Unauthorized",
+    )
+    .await;
 
-    let device_hash = match hash {
-        Some(d) => d,
-        None => return Err("Couldn't find any auth entires for device ID"),
-    };
-    if device_hash.hash != gen_sha_256_hash(&pin) {
-        return Err("Unauthorized");
+    if let Err(e) = result {
+        return Err(e);
     }
 
     // Start sync logic
@@ -254,24 +250,22 @@ pub async fn server_sync(
     // let device_name = multipart_form.texts.get("DeviceName").first_text().unwrap();
 
     // Check if already present
+    let result = verify_device_id(
+        database,
+        &device_id,
+        Status::InternalServerError,
+        Status::Conflict,
+    ).await;
 
-    let result: Result<Option<Device>, surrealdb::Error> =
-        database.select(("device", &device_id)).await;
-
-    let result = match result {
-        Err(_e) => return Err(Status::InternalServerError),
+    let device = match result {
+        Err(e) => return Err(e),
         Ok(d) => d,
-    };
-
-    let result = match result {
-        None => return Err(Status::Conflict),
-        Some(d) => d,
     };
 
     return Ok(json!({
         "DeviceID": device_id,
-        "DeviceName": result.name,
-        "LastSync": result.last_sync,
-        "Global": result.global
+        "DeviceName": device.name,
+        "LastSync": device.last_sync,
+        "Global": device.global
     }));
 }
