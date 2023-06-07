@@ -17,7 +17,7 @@ use crate::server::db::hash_table::DeviceHash;
 use crate::server::db::local_table::LocalEntry;
 use crate::server::db::Record;
 use crate::server::utility::TextFieldExt;
-use crate::server::utility::{self, gen_sha_256_hash};
+use crate::server::utility;
 
 #[get("/connect", data = "<data>")]
 pub async fn connect(
@@ -43,7 +43,7 @@ pub async fn connect(
     // Return BadRequest(206) if there is an error parsing the request
     let multipart_form = match form_result {
         Ok(form) => form,
-        Err(e) => return Err(Status::BadRequest),
+        Err(_e) => return Err(Status::BadRequest),
     };
 
     // Extract the data from the form
@@ -70,7 +70,7 @@ pub async fn connect(
     let device_id = device_id.first_text().unwrap();
     let os = os.first_text().unwrap();
     let device_name = device_name.first_text().unwrap();
-    let location = location.first_text().unwrap();
+    let _location = location.first_text().unwrap();
     let pin = pin.first_text().unwrap();
     let database = &db.database;
 
@@ -79,7 +79,7 @@ pub async fn connect(
 
     let device = match device {
         // Return Conflict if there is already a device with the same id
-        Some(d) => return Err(Status::Conflict),
+        Some(_d) => return Err(Status::Conflict),
         None => Device::new(
             device_name,
             is_global,
@@ -115,7 +115,7 @@ pub async fn connect(
     // let r = database
     // .query(format!("CREATE hash:{device_id} Content {}", to_string(&device_hash).unwrap()))
     // .await.unwrap();
-    let r: Option<Record> = database
+    let _r: Option<Record> = database
         .create(("hash", &device_id))
         .content(&device_hash)
         .await
@@ -144,19 +144,19 @@ pub async fn sync_database(
     // Return BadRequest(206) if there is an error parsing the request
     let multipart_form = match form_result {
         Ok(form) => form,
-        Err(e) => return Err("Error Parsing the request"),
+        Err(_e) => return Err("Error Parsing the request"),
     };
 
     let device_id = multipart_form.texts.get("DeviceID");
     let device_name = multipart_form.texts.get("DeviceName");
-    let is_global = match multipart_form.texts.get("Global") {
+    let _is_global = match multipart_form.texts.get("Global") {
         Some(_t) => true,
         None => false,
     };
     let pin = multipart_form.texts.get("PIN");
 
     let device_id = device_id.first_text().unwrap();
-    let device_name = device_name.first_text().unwrap();
+    let _device_name = device_name.first_text().unwrap();
     let pin = pin.first_text().unwrap();
     let database = &db.database;
 

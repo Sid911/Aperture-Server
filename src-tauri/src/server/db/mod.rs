@@ -4,7 +4,7 @@ pub mod hash_table;
 pub mod local_table;
 pub mod middleware;
 
-use rocket::time::OffsetDateTime;
+
 use surrealdb::sql::Thing;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -23,12 +23,12 @@ pub struct Record {
 /*  These are all persistant settings, these are immutable
    for rollback etc.
 */
-pub struct Server {
-    global_pin: String,
-    local_pin: String,
-}
+// pub struct Server {
+//     global_pin: String,
+//     local_pin: String,
+// }
 
-pub enum Store {
-    Device(local_table::LocalEntry),
-    Global(),
-}
+// pub enum Store {
+//     Device(local_table::LocalEntry),
+//     Global(),
+// }

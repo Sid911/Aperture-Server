@@ -126,7 +126,7 @@ pub async fn verify_device_id<T>(
         database.select(("device", device_id)).await;
 
     let result = match result {
-        Err(e) => return Err(surreal_error),
+        Err(_e) => return Err(surreal_error),
         Ok(d) => d,
     };
 

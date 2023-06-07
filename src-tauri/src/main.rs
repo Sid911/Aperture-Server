@@ -31,8 +31,8 @@ impl WindowHandler {
 impl Handler for WindowHandler {
     async fn handle<'r>(
         &self,
-        request: &'r Request<'_>,
-        data: rocket::Data<'r>,
+        _request: &'r Request<'_>,
+        _data: rocket::Data<'r>,
     ) -> rocket::route::Outcome<'r> {
         self.window
             .emit("from-rust", format!("message"))
@@ -76,7 +76,7 @@ fn main() {
         .setup(|app| {
             let window = app.get_window("main").unwrap();
 
-            let index = WindowHandler::new(window);
+            let _index = WindowHandler::new(window);
 
             // mount the rocket instance
             tauri::async_runtime::spawn(async move {

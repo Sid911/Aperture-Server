@@ -6,7 +6,7 @@ use rocket_multipart_form_data::{
 
 use crate::server::{
     db::{
-        db_instance::DbInstance, device_table::Device, hash_table::DeviceHash,
+        db_instance::DbInstance,
         local_table::LocalEntry,
     },
     utility::{gen_sha_256_hash, TextFieldExt},
@@ -33,7 +33,7 @@ pub async fn pull_file(
         ..MultipartFormDataOptions::default()
     };
 
-    let mut multipart_form = match MultipartFormData::parse(content_type, data, options).await {
+    let multipart_form = match MultipartFormData::parse(content_type, data, options).await {
         Ok(multipart_form_data) => multipart_form_data,
         Err(err) => {
             match err {
@@ -60,14 +60,14 @@ pub async fn pull_file(
     let device_name = multipart_form.texts.get("DeviceName");
     let file_name = multipart_form.texts.get("FileName");
     let realtive_path = multipart_form.texts.get("RelativePath");
-    let is_global = match multipart_form.texts.get("Global") {
+    let _is_global = match multipart_form.texts.get("Global") {
         Some(_t) => true,
         None => false,
     };
     let pin = multipart_form.texts.get("PIN");
     // Get Strings
     let device_id = device_id.first_text().unwrap();
-    let device_name = device_name.first_text().unwrap();
+    let _device_name = device_name.first_text().unwrap();
     let pin = pin.first_text().unwrap();
     let file_name = file_name.first_text().unwrap();
     let relative_path = realtive_path.first_text().unwrap();
@@ -136,5 +136,5 @@ pub async fn pull_file(
     }
 }
 
-#[get("/folder")]
-async fn pull_folder() {}
+// #[get("/folder")]
+// async fn pull_folder() {}

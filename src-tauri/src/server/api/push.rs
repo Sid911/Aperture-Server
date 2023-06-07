@@ -9,7 +9,7 @@ use rocket_multipart_form_data::{
 
 use crate::server::{
     db::{
-        db_instance::DbInstance, device_table::Device, hash_table::DeviceHash,
+        db_instance::DbInstance,
         local_table::LocalEntry,
     },
     utility::{gen_sha_256_hash, TextFieldExt},
@@ -39,7 +39,7 @@ pub async fn push_file(
         ..MultipartFormDataOptions::default()
     };
 
-    let mut multipart_form = match MultipartFormData::parse(content_type, data, options).await {
+    let multipart_form = match MultipartFormData::parse(content_type, data, options).await {
         Ok(multipart_form_data) => multipart_form_data,
         Err(err) => {
             match err {
@@ -69,7 +69,7 @@ pub async fn push_file(
     let realtive_path: Option<&Vec<rocket_multipart_form_data::TextField>> = multipart_form.texts.get("RelativePath");
     let dir_path = multipart_form.texts.get("DirPath");
     let client_path = multipart_form.texts.get("ClientPath");
-    let is_global = match multipart_form.texts.get("Global") {
+    let _is_global = match multipart_form.texts.get("Global") {
         Some(_t) => true,
         None => false,
     };
@@ -178,4 +178,4 @@ pub async fn push_file(
     Ok(Status::Accepted)
 }
 
-async fn push_folder() {}
+// async fn push_folder() {}

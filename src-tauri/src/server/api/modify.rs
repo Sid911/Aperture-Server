@@ -12,12 +12,12 @@ use surrealdb::opt::PatchOp;
 
 use crate::server::{
     api::utility::{verify_device_id, verify_pin},
-    db::{db_instance::DbInstance, device_table::Device, hash_table::DeviceHash, OS},
-    utility::{self, gen_sha_256_hash, TextFieldExt},
+    db::{db_instance::DbInstance, device_table::Device},
+    utility::{self, TextFieldExt},
 };
 
-#[patch("/file")]
-async fn modify_file() {}
+// #[patch("/file")]
+// fn modify_file() {}
 
 #[post("/device", data = "<data>")]
 pub async fn modfiy_device(
@@ -41,15 +41,15 @@ pub async fn modfiy_device(
     // Return BadRequest(206) if there is an error parsing the request
     let multipart_form = match form_result {
         Ok(form) => form,
-        Err(e) => return Err(Status::BadRequest),
+        Err(_e) => return Err(Status::BadRequest),
     };
 
     // Extract the data from the form
     let device_id = multipart_form.texts.get("DeviceID");
-    let os = multipart_form.texts.get("OS");
+    // let os = multipart_form.texts.get("OS");
     let device_name = multipart_form.texts.get("DeviceName");
     let pin = multipart_form.texts.get("PIN");
-    let read_only = match multipart_form.texts.get("ReadOnly") {
+    let _read_only = match multipart_form.texts.get("ReadOnly") {
         Some(_t) => true,
         None => false,
     };
@@ -92,7 +92,7 @@ pub async fn modfiy_device(
     }
 
     // After verfied
-    let os = os.first_text();
+    // let os = os.first_text();
     // if let Some(os_type) = os {
     //     let os: Result<OS, serde_json::Error> = from_str(&os_type);
     //     let os = match os {

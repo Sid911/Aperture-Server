@@ -44,13 +44,13 @@ impl LocalEntry {
         }
     }
 
-    fn get_metadata(&self) -> &SerializedMetadata {
-        &self.metadata
-    }
+    // fn get_metadata(&self) -> &SerializedMetadata {
+    //     &self.metadata
+    // }
 
-    fn set_metadata(&mut self, metadata: SerializedMetadata) {
-        self.metadata = metadata;
-    }
+    // fn set_metadata(&mut self, metadata: SerializedMetadata) {
+    //     self.metadata = metadata;
+    // }
 }
 
 #[cfg(unix)]
