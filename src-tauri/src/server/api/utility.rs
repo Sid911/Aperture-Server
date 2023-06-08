@@ -5,6 +5,78 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 use crate::server::{db::{device_table::Device, hash_table::DeviceHash}, utility::gen_sha_256_hash};
 
+// Mulitpart form extraction
+
+    /// Extracts multipart-form texts by taking the parsed result and keys
+    /// for the field
+    /// # Example
+    /// ```
+    /// let options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
+    ///     MultipartFormDataField::text("DeviceID"),
+    ///     MultipartFormDataField::text("OS"),
+    ///     MultipartFormDataField::text("DeviceName"),
+    ///     MultipartFormDataField::text("Global"),
+    ///     MultipartFormDataField::text("Location"),
+    ///     MultipartFormDataField::text("PIN"),
+    ///     MultipartFormDataField::text("ReadOnly"),
+    /// ]);
+    /// 
+    /// let form_result = MultipartFormData::parse(content_type, data, options).await;
+    /// 
+    /// 
+    /// parse_multipart_form_texts!(
+    ///     multipart_form: form_result,
+    ///     // Return BadRequest(206) if there is an error parsing the request
+    ///     parse_error: Status::BadRequest;
+    ///     device_id: "DeviceID";
+    ///     os: "OS";
+    ///     device_name: "DeviceName";
+    ///     pin: "PIN";
+    /// );
+    /// ```
+    ///
+#[macro_export]
+macro_rules! parse_multipart_form_texts {
+    () => {};
+    ($multipart:ident: $form:expr, parse_error: $error_return:expr; $($field:ident: $elem:expr;)*) => {
+        let $multipart = match $form {
+            Ok(form) => form,
+            Err(_e) => return Err($error_return),
+        };
+        
+        $(
+            let $field = $multipart.texts
+            .get($elem)
+            .first_text()
+            .expect(format!("{} not found", $elem).as_str());
+        )*
+    };
+    // let multipart_form = match MultipartFormData::parse(content_type, data, options).await {
+    //     Ok(multipart_form_data) => multipart_form_data,
+    //     Err(err) => {
+    //         match err {
+    //             MultipartFormDataError::DataTooLargeError(_) => {
+    //                 return Err("The file is too large.");
+    //             }
+    //             MultipartFormDataError::DataTypeError(_) => {
+    //                 return Err("The file is not an image.");
+    //             }
+    //             MultipartFormDataError::MulterError(multer::Error::IncompleteFieldData {
+    //                 ..
+    //             })
+    //             | MultipartFormDataError::MulterError(multer::Error::IncompleteHeaders {
+    //                 ..
+    //             }) => {
+    //                 // may happen when we set the max_data_bytes limitation
+    //                 return Err("The request body seems too large.");
+    //             }
+    //             _ => panic!("{:?}", err),
+    //         }
+    //     }
+    // };
+}
+
+
 // File based Utility functions
 pub fn get_file_meta(path: &std::path::PathBuf) -> Option<std::fs::Metadata> {
     if let Ok(metadata) = std::fs::metadata(path) {

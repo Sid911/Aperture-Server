@@ -10,6 +10,7 @@ use serde_json::{from_str, json, to_string, Value};
 use surrealdb::sql::{Id, Thing};
 use tracing::info;
 
+use crate::parse_multipart_form_texts;
 use crate::server::api::utility::{verify_device_id, verify_pin};
 use crate::server::db::db_instance::DbInstance;
 use crate::server::db::device_table::Device;
@@ -17,7 +18,6 @@ use crate::server::db::hash_table::DeviceHash;
 use crate::server::db::local_table::LocalEntry;
 use crate::server::db::Record;
 use crate::server::utility::TextFieldExt;
-use crate::server::utility;
 
 #[get("/connect", data = "<data>")]
 pub async fn connect(
@@ -27,7 +27,7 @@ pub async fn connect(
     db: &State<DbInstance>,
 ) -> Result<String, Status> {
     info!("Remote Address: {}", remote_address);
-    // Process multipart form data
+    // Process multipart form data    let device_id:String;
     let options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
         MultipartFormDataField::text("DeviceID"),
         MultipartFormDataField::text("OS"),
@@ -40,38 +40,27 @@ pub async fn connect(
 
     let form_result = MultipartFormData::parse(content_type, data, options).await;
 
-    // Return BadRequest(206) if there is an error parsing the request
-    let multipart_form = match form_result {
-        Ok(form) => form,
-        Err(_e) => return Err(Status::BadRequest),
-    };
+    //extract texts
+    parse_multipart_form_texts!(
+        multipart_form: form_result,
+        // Return BadRequest(206) if there is an error parsing the request
+        parse_error: Status::BadRequest;
+        device_id: "DeviceID";
+        os: "OS";
+        device_name: "DeviceName";
+        pin: "PIN";
+    );
 
-    // Extract the data from the form
-    let device_id = multipart_form.texts.get("DeviceID");
-    let os = multipart_form.texts.get("OS");
-    let device_name = multipart_form.texts.get("DeviceName");
+    // Extract the data from the form for bools
     let is_global = match multipart_form.texts.get("Global") {
         Some(_t) => true,
         None => false,
     };
-    let location = multipart_form.texts.get("Location");
-    let pin = multipart_form.texts.get("PIN");
     let read_only = match multipart_form.texts.get("ReadOnly") {
         Some(_t) => true,
         None => false,
     };
 
-    let required_available = utility::verify_required_data(&[device_id, os, device_name, pin]);
-    if !required_available {
-        return Err(Status::BadRequest);
-    }
-    info!("All required Parameters available : {}", required_available);
-
-    let device_id = device_id.first_text().unwrap();
-    let os = os.first_text().unwrap();
-    let device_name = device_name.first_text().unwrap();
-    let _location = location.first_text().unwrap();
-    let pin = pin.first_text().unwrap();
     let database = &db.database;
 
     // Check for existing setup
@@ -141,25 +130,20 @@ pub async fn sync_database(
 
     let form_result = MultipartFormData::parse(content_type, data, options).await;
 
-    // Return BadRequest(206) if there is an error parsing the request
-    let multipart_form = match form_result {
-        Ok(form) => form,
-        Err(_e) => return Err("Error Parsing the request"),
-    };
+    parse_multipart_form_texts!(
+        multipart_form: form_result,
+        parse_error: "Error Parsing the request";
+        device_id: "DeviceID";
+        _device_name: "DeviceName";
+        pin: "PIN";
+    );
 
-    let device_id = multipart_form.texts.get("DeviceID");
-    let device_name = multipart_form.texts.get("DeviceName");
     let _is_global = match multipart_form.texts.get("Global") {
         Some(_t) => true,
         None => false,
     };
-    let pin = multipart_form.texts.get("PIN");
-
-    let device_id = device_id.first_text().unwrap();
-    let _device_name = device_name.first_text().unwrap();
-    let pin = pin.first_text().unwrap();
+    
     let database = &db.database;
-
     // Check Device Entry
     let result = verify_device_id(
         database,
@@ -239,15 +223,11 @@ pub async fn server_sync(
     ]);
 
     let form_result = MultipartFormData::parse(content_type, data, options).await;
-
-    // Return BadRequest(206) if there is an error parsing the request
-    let multipart_form = match form_result {
-        Ok(form) => form,
-        Err(_e) => return Err(Status::BadRequest),
-    };
-
-    let device_id = multipart_form.texts.get("DeviceID").first_text().unwrap();
-    // let device_name = multipart_form.texts.get("DeviceName").first_text().unwrap();
+    parse_multipart_form_texts!(
+        multipart_form: form_result,
+        parse_error: Status::BadRequest;
+        device_id: "DeviceID";
+    );
 
     // Check if already present
     let result = verify_device_id(

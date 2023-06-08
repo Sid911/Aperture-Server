@@ -4,13 +4,13 @@ use rocket_multipart_form_data::{
     MultipartFormDataOptions,
 };
 
-use crate::server::{
+use crate::{server::{
     db::{
         db_instance::DbInstance,
         local_table::LocalEntry,
     },
     utility::{gen_sha_256_hash, TextFieldExt},
-};
+}, parse_multipart_form_texts};
 
 use super::utility::{verify_device_id, verify_pin};
 
@@ -33,44 +33,21 @@ pub async fn pull_file(
         ..MultipartFormDataOptions::default()
     };
 
-    let multipart_form = match MultipartFormData::parse(content_type, data, options).await {
-        Ok(multipart_form_data) => multipart_form_data,
-        Err(err) => {
-            match err {
-                MultipartFormDataError::DataTooLargeError(_) => {
-                    return Err("The file is too large.");
-                }
-                MultipartFormDataError::DataTypeError(_) => {
-                    return Err("The file is not an image.");
-                }
-                MultipartFormDataError::MulterError(multer::Error::IncompleteFieldData {
-                    ..
-                })
-                | MultipartFormDataError::MulterError(multer::Error::IncompleteHeaders {
-                    ..
-                }) => {
-                    // may happen when we set the max_data_bytes limitation
-                    return Err("The request body seems too large.");
-                }
-                _ => panic!("{:?}", err),
-            }
-        }
-    };
-    let device_id = multipart_form.texts.get("DeviceID");
-    let device_name = multipart_form.texts.get("DeviceName");
-    let file_name = multipart_form.texts.get("FileName");
-    let realtive_path = multipart_form.texts.get("RelativePath");
+    let form_result = MultipartFormData::parse(content_type, data, options).await;
+    parse_multipart_form_texts!(
+        multipart_form: form_result,
+        parse_error: "Error: Could not parse the request";
+        device_id: "DeviceID";
+        _device_name: "DeviceName";
+        file_name: "FileName";
+        relative_path: "RelativePath";
+        pin: "PIN";
+    );
+
     let _is_global = match multipart_form.texts.get("Global") {
         Some(_t) => true,
         None => false,
     };
-    let pin = multipart_form.texts.get("PIN");
-    // Get Strings
-    let device_id = device_id.first_text().unwrap();
-    let _device_name = device_name.first_text().unwrap();
-    let pin = pin.first_text().unwrap();
-    let file_name = file_name.first_text().unwrap();
-    let relative_path = realtive_path.first_text().unwrap();
 
     let database = &db.database;
 
