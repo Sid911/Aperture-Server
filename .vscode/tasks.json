@@ -1,0 +1,37 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "ui:dev",
+      "type": "shell",
+      "isBackground": true,
+      "command": "pnpm",
+      "args": ["dev"],
+      "options": {
+        "env": {
+          "PATH": "${env:PATH}"
+        },
+        "shell": {
+          "executable": "bash",
+          "args": ["-l", "-c"]
+        }
+      }
+    },
+    {
+      "label": "ui:build",
+      "type": "shell",
+      // change this to your `beforeBuildCommand`:
+      "dependsOn": ["nvm:init"],
+      "command": "pnpm",
+      "args": ["build"]
+    },
+    {
+      "label": "nvm:init",
+      "type": "shell",
+      "command": "nvm",
+      "args": ["use 18.16"]
+    }
+  ]
+}

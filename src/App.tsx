@@ -9,11 +9,21 @@ import {
   Ripple,
   initTE,
 } from "tw-elements";
+import { emit, listen } from '@tauri-apps/api/event'
 
 function App() {
   const [greetMsg, setGreetMsg] = createSignal("");
   const [name, setName] = createSignal("");
-  onMount(()=>{initTE({ Dropdown, Ripple });})
+
+  onMount(async ()=>{
+    initTE({ Dropdown, Ripple });
+    const unlisten = await listen('greet', (event) => {
+      console.log(event.payload);
+    })
+    emit('greet', {
+      theMessage: 'Tauri is awesome!',
+    })
+})
   return (
     <div class="flex p-5 flex-col">
       <div class="flex flex-row justify-between mb-3">
