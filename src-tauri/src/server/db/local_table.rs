@@ -40,7 +40,7 @@ impl LocalEntry {
             blurhash,
             dir_path,
             client_path,
-            relative_path
+            relative_path,
         }
     }
 

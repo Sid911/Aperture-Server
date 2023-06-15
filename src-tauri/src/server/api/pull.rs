@@ -1,16 +1,15 @@
 use rocket::{fs::NamedFile, http::ContentType, Data, State};
 use rocket_multipart_form_data::{
-    multer, MultipartFormData, MultipartFormDataError, MultipartFormDataField,
-    MultipartFormDataOptions,
+    MultipartFormData, MultipartFormDataField, MultipartFormDataOptions,
 };
 
-use crate::{server::{
-    db::{
-        db_instance::DbInstance,
-        local_table::LocalEntry,
+use crate::{
+    parse_multipart_form_texts,
+    server::{
+        db::{db_instance::DbInstance, local_table::LocalEntry},
+        utility::{gen_sha_256_hash, TextFieldExt},
     },
-    utility::{gen_sha_256_hash, TextFieldExt},
-}, parse_multipart_form_texts};
+};
 
 use super::utility::{verify_device_id, verify_pin};
 

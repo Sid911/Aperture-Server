@@ -12,6 +12,7 @@ use rocket::{
     response::content::RawHtml,
     Build, Config,
 };
+use tauri::Window;
 
 static_response_handler! {
     "/favicon.ico" => favicon => "favicon",
@@ -33,7 +34,7 @@ fn index() -> RawHtml<&'static str> {
     return RawHtml("<html><head><title> hello </title></head><body>Jello</body></html>");
 }
 
-pub fn rocket() -> rocket::Rocket<Build> {
+pub fn rocket(window: Window) -> rocket::Rocket<Build> {
     let figment = Figment::from(Config::default())
         .merge(Toml::file("Rocket.toml").nested())
         .merge(Toml::file("App.toml").nested());
@@ -45,6 +46,7 @@ pub fn rocket() -> rocket::Rocket<Build> {
             "favicon-png" => "assets/favicon-32x32.png",
         ))
         .register("/", catchers![not_found])
+        .manage(window)
         .mount("/", routes![favicon, favicon_png])
         .mount("/", routes![index])
         .mount(

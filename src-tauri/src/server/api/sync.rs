@@ -142,7 +142,7 @@ pub async fn sync_database(
         Some(_t) => true,
         None => false,
     };
-    
+
     let database = &db.database;
     // Check Device Entry
     let result = verify_device_id(
@@ -235,13 +235,13 @@ pub async fn server_sync(
         &device_id,
         Status::InternalServerError,
         Status::Conflict,
-    ).await;
+    )
+    .await;
 
     let device = match result {
         Err(e) => return Err(e),
         Ok(d) => d,
     };
-
     return Ok(json!({
         "DeviceID": device_id,
         "DeviceName": device.name,

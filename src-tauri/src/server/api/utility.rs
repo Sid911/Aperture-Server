@@ -3,38 +3,41 @@ use rocket_multipart_form_data::FileField;
 use surrealdb::{engine::remote::ws::Client, Surreal};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
-use crate::server::{db::{device_table::Device, hash_table::DeviceHash}, utility::gen_sha_256_hash};
+use crate::server::{
+    db::{device_table::Device, hash_table::DeviceHash},
+    utility::gen_sha_256_hash,
+};
 
 // Mulitpart form extraction
 
-    /// Extracts multipart-form texts by taking the parsed result and keys
-    /// for the field
-    /// # Example
-    /// ```
-    /// let options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
-    ///     MultipartFormDataField::text("DeviceID"),
-    ///     MultipartFormDataField::text("OS"),
-    ///     MultipartFormDataField::text("DeviceName"),
-    ///     MultipartFormDataField::text("Global"),
-    ///     MultipartFormDataField::text("Location"),
-    ///     MultipartFormDataField::text("PIN"),
-    ///     MultipartFormDataField::text("ReadOnly"),
-    /// ]);
-    /// 
-    /// let form_result = MultipartFormData::parse(content_type, data, options).await;
-    /// 
-    /// 
-    /// parse_multipart_form_texts!(
-    ///     multipart_form: form_result,
-    ///     // Return BadRequest(206) if there is an error parsing the request
-    ///     parse_error: Status::BadRequest;
-    ///     device_id: "DeviceID";
-    ///     os: "OS";
-    ///     device_name: "DeviceName";
-    ///     pin: "PIN";
-    /// );
-    /// ```
-    ///
+/// Extracts multipart-form texts by taking the parsed result and keys
+/// for the field
+/// # Example
+/// ```
+/// let options = MultipartFormDataOptions::with_multipart_form_data_fields(vec![
+///     MultipartFormDataField::text("DeviceID"),
+///     MultipartFormDataField::text("OS"),
+///     MultipartFormDataField::text("DeviceName"),
+///     MultipartFormDataField::text("Global"),
+///     MultipartFormDataField::text("Location"),
+///     MultipartFormDataField::text("PIN"),
+///     MultipartFormDataField::text("ReadOnly"),
+/// ]);
+///
+/// let form_result = MultipartFormData::parse(content_type, data, options).await;
+///
+///
+/// parse_multipart_form_texts!(
+///     multipart_form: form_result,
+///     // Return BadRequest(206) if there is an error parsing the request
+///     parse_error: Status::BadRequest;
+///     device_id: "DeviceID";
+///     os: "OS";
+///     device_name: "DeviceName";
+///     pin: "PIN";
+/// );
+/// ```
+///
 #[macro_export]
 macro_rules! parse_multipart_form_texts {
     () => {};
@@ -43,7 +46,7 @@ macro_rules! parse_multipart_form_texts {
             Ok(form) => form,
             Err(_e) => return Err($error_return),
         };
-        
+
         $(
             let $field = $multipart.texts
             .get($elem)
@@ -75,7 +78,6 @@ macro_rules! parse_multipart_form_texts {
     //     }
     // };
 }
-
 
 // File based Utility functions
 pub fn get_file_meta(path: &std::path::PathBuf) -> Option<std::fs::Metadata> {
@@ -216,23 +218,23 @@ pub async fn verify_pin<T>(
     surreal_error: T,
     not_found_error: T,
     incorrect_pin_error: T,
-) -> Result<DeviceHash, T>{
+) -> Result<DeviceHash, T> {
     let hash: Result<Option<DeviceHash>, surrealdb::Error> =
-    database.select(("hash", device_id)).await;
-let hash = match hash {
-    Ok(d) => d,
-    Err(e) => {
-        error!("{e}");
-        return Err(surreal_error);
-    }
-};
+        database.select(("hash", device_id)).await;
+    let hash = match hash {
+        Ok(d) => d,
+        Err(e) => {
+            error!("{e}");
+            return Err(surreal_error);
+        }
+    };
 
-let device_hash = match hash {
-    Some(d) => d,
-    None => return Err(not_found_error),
-};
-if device_hash.hash != gen_sha_256_hash(pin) {
-    return Err(incorrect_pin_error);
-}
-return Ok(device_hash);
+    let device_hash = match hash {
+        Some(d) => d,
+        None => return Err(not_found_error),
+    };
+    if device_hash.hash != gen_sha_256_hash(pin) {
+        return Err(incorrect_pin_error);
+    }
+    return Ok(device_hash);
 }

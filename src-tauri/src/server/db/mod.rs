@@ -4,7 +4,6 @@ pub mod hash_table;
 pub mod local_table;
 pub mod middleware;
 
-
 use surrealdb::sql::Thing;
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

@@ -1,6 +1,5 @@
 use surrealdb::sql::{Algorithm, Thing};
 
-
 use crate::server::utility::gen_sha_256_hash;
 
 // Device Hash for specific devices

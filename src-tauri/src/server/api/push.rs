@@ -3,19 +3,21 @@ use rocket::{
     Data, State,
 };
 use rocket_multipart_form_data::{
-    multer, MultipartFormData, MultipartFormDataError, MultipartFormDataField,
-    MultipartFormDataOptions,
+    MultipartFormData, MultipartFormDataField, MultipartFormDataOptions,
 };
 
-use crate::{server::{
-    db::{
-        db_instance::DbInstance,
-        local_table::LocalEntry,
+use crate::{
+    parse_multipart_form_texts,
+    server::{
+        db::{db_instance::DbInstance, local_table::LocalEntry},
+        utility::{gen_sha_256_hash, TextFieldExt},
     },
-    utility::{gen_sha_256_hash, TextFieldExt},
-}, parse_multipart_form_texts};
+};
 
-use super::utility::{generate_blurhash, get_file_meta, is_image_file, save_file_to_documents, verify_device_id, verify_pin};
+use super::utility::{
+    generate_blurhash, get_file_meta, is_image_file, save_file_to_documents, verify_device_id,
+    verify_pin,
+};
 
 #[post("/file", data = "<data>")]
 pub async fn push_file(
@@ -51,7 +53,7 @@ pub async fn push_file(
         client_path: "ClientPath";
         pin: "PIN";
     );
-    
+
     // Get fields
     let file = multipart_form.files.get("File");
     let file = file.unwrap().first().unwrap();
@@ -59,7 +61,7 @@ pub async fn push_file(
         Some(_t) => true,
         None => false,
     };
-    
+
     let database = &db.database;
 
     // Check Device Entry
@@ -129,7 +131,7 @@ pub async fn push_file(
         },
         dir_path.clone(),
         client_path.clone(),
-        relative_path.clone()
+        relative_path.clone(),
     );
     let _res = match local {
         Some(_instance) => {
