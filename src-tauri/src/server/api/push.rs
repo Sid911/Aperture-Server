@@ -135,14 +135,14 @@ pub async fn push_file(
     );
     let _res = match local {
         Some(_instance) => {
-            let local_l: Result<LocalEntry, surrealdb::Error> = database
+            let local_l: Result<Option<LocalEntry>, _> = database
                 .update((&device_id, &file_id))
                 .content(new_local_entry)
                 .await;
             local_l
         }
         None => {
-            let local_l: Result<LocalEntry, surrealdb::Error> = database
+            let local_l: Result<Option<LocalEntry>, _> = database
                 .create((&device_id, &file_id))
                 .content(new_local_entry)
                 .await;

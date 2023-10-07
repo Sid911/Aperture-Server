@@ -111,7 +111,7 @@ pub async fn modfiy_device(
 
     let device_name = device_name.first_text();
     if let Some(dev_name) = device_name {
-        let _d: Device = database
+        let _d: Option<Device> = database
             .update(("device", &device_id))
             .patch(PatchOp::replace("/name", dev_name))
             .await
@@ -124,7 +124,7 @@ pub async fn modfiy_device(
     };
 
     if remote_addr {
-        let _d: Device = database
+        let _d: Option<Device> = database
             .update(("device", &device_id))
             .patch(PatchOp::replace(
                 "/last_remote_addr",

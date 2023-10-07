@@ -9,21 +9,24 @@ import {
   Ripple,
   initTE,
 } from "tw-elements";
-import { emit, listen } from '@tauri-apps/api/event'
+
+import { invoke } from "@tauri-apps/api/tauri";
 
 function App() {
-  const [greetMsg, setGreetMsg] = createSignal("");
+  const [ipAddr, setIpAddr] = createSignal("Loading");
   const [name, setName] = createSignal("");
 
-  onMount(async ()=>{
+  onMount(async () => {
     initTE({ Dropdown, Ripple });
-    const unlisten = await listen('greet', (event) => {
-      console.log(event.payload);
+    invoke("get_ipv4").then((val) => {
+      setIpAddr(val as string)
+      console.log(val)
+    }).catch((e)=> {
+      console.error(e)
+      setIpAddr("Unknown :( ")
     })
-    emit('greet', {
-      theMessage: 'Tauri is awesome!',
-    })
-})
+  })
+
   return (
     <div class="flex p-5 flex-col">
       <div class="flex flex-row justify-between mb-3">
@@ -33,20 +36,11 @@ function App() {
           </p>
           <span><FiServer class="m-2" size={20} /></span>
         </div>
-        <button class="dark:bg-black rounded-lg p-2 dark:text-neutral-100 shadow-md shadow-black"> Online : 192.168.126.127</button>
+        <button class="dark:bg-black rounded-lg p-2 dark:text-neutral-100 shadow-md shadow-black"> Online : {ipAddr()}</button>
       </div>
       <div class="grid grid-cols-3 gap-5">
         <FolderSelector />
-        <Tasks class="col-span-2" tasks={[
-          // {
-          //   title: "VMksuRE.pdf",
-          //   description: "From Did",
-          //   file_type: "pdf",
-          //   progress: 0.4,
-          //   total_size: 200000,
-          //   uid: "e13b618e-0111-5077-9de9-d15beebd4c5c"
-          // }
-        ]} />
+        <Tasks class="col-span-2" tasks={[]} />
       </div>
       <div class="my-4">
         <Devices devices={[
@@ -69,7 +63,7 @@ function App() {
             syncing: false
 
           },
-        ]} />
+        ]} ip={ipAddr} />
       </div>
     </div>
   );

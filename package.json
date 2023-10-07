@@ -12,6 +12,8 @@
   "license": "MIT",
   "dependencies": {
     "@tauri-apps/api": "^1.4.0",
+    "@types/qrcode": "^1.5.2",
+    "qrcode": "^1.5.3",
     "solid-icons": "^1.0.8",
     "solid-js": "^1.7.6",
     "tw-elements": "1.0.0-beta2"

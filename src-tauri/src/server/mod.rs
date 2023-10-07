@@ -34,7 +34,7 @@ fn index() -> RawHtml<&'static str> {
     return RawHtml("<html><head><title> hello </title></head><body>Jello</body></html>");
 }
 
-pub fn rocket(window: Window) -> rocket::Rocket<Build> {
+fn rocket(window: Window) -> rocket::Rocket<Build> {
     let figment = Figment::from(Config::default())
         .merge(Toml::file("Rocket.toml").nested())
         .merge(Toml::file("App.toml").nested());
@@ -61,4 +61,11 @@ pub fn rocket(window: Window) -> rocket::Rocket<Build> {
         .mount("/push", routes![api::push::push_file])
         .mount("/modify", routes![api::modify::modfiy_device]);
     return build;
+}
+
+pub fn run(window: Window) {
+    tauri::async_runtime::spawn(async move {
+        let _rocket = rocket(window);
+        _rocket.launch().await
+    });
 }
